@@ -154,11 +154,22 @@ def insert_into_database(updated_sheets, db_connection, logger):
 
         print(f"Executing query: {query}")
         
+        # try:
+        #     #print(f"Executing query: {query}")
+        #     cursor.execute(query)
+        # except pymysql.Error as e:
+        #     print(f"Error inserting data into table '{table_name}': {e}")
+        #     logger.error(f"Error inserting into table '{table_name}': {e}")
+        #     logger.info(f"Failed query: {query}")
+        #     continue  
+
         try:
-            #print(f"Executing query: {query}")
             cursor.execute(query)
         except pymysql.Error as e:
             print(f"Error inserting data into table '{table_name}': {e}")
+            # Initialize the logger here only if it's not already provided
+            if logger is None:
+                logger = setup_logger("db_error_log.log")
             logger.error(f"Error inserting into table '{table_name}': {e}")
             logger.info(f"Failed query: {query}")
             continue  

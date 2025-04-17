@@ -174,7 +174,7 @@ def process_sheets(updated_sheets, function_map):
     Returns:
         dict: Updated dictionary with processed DataFrames.
     """
-
+    #print("updated_sheets",updated_sheets)
     for sheet_name, updated_df in updated_sheets.items():
         for index, row in updated_df.iterrows():
             function_name = row.get("function")
@@ -195,6 +195,18 @@ def process_sheets(updated_sheets, function_map):
                     extracted_value = func(extracted_value)
 
             updated_df.at[index, "Extracted Value"] = extracted_value  
+            print("updated_sheets",updated_sheets)
+             # # Save combined sheets to output
+            output_dir = os.path.join(os.getcwd(), "processed_sheets")
+            os.makedirs(output_dir, exist_ok=True)
+            # timestamp = time.strftime("%Y%m%d_%H%M%S")
+            output_filename = f"processed_sheets.xlsx"
+            output_file_path = os.path.join(output_dir, output_filename)
+
+            #Optional: Write processed data to file
+            with pd.ExcelWriter(output_file_path, engine='openpyxl') as writer:
+                for sheet_name, df in updated_sheets.items():
+                    df.to_excel(writer, sheet_name=sheet_name, index=False)
 
     return updated_sheets
 

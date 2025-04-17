@@ -20,20 +20,24 @@ def extract_stock_exchange(stock_exchange):
         Handles MySQL errors gracefully and returns "OTHER" in case of a database error.
     """
     
-    try:
-        with db_connection.cursor() as cursor:
-            query = """
-            SELECT stock_exchange_code
-            FROM stock_exchange_master 
-            WHERE stock_exchange_code = %s
-            """
-            cursor.execute(query, (stock_exchange,))
-            result = cursor.fetchone()
+    # try:
+    with db_connection.cursor() as cursor:
+        query = """
+        SELECT stock_exchange_code
+        FROM stock_exchange_master 
+        WHERE stock_exchange_code = %s
+        """
+        cursor.execute(query, (stock_exchange,))
+        result = cursor.fetchone()
 
-        return result[0] if result else "OTHER"  
-    except pymysql.MySQLError as e:
-        print("Error:", e)
-        return "OTHER"
+        # print("result", result)
+
+    return result["stock_exchange_code"] if result else "OTHER"
+
+    # return result[0] if result else "OTHER"  
+    # except pymysql.MySQLError as e:
+    #     print("Error:", e)
+    #     return "OTHER"
 
 def get_year_code_from_context(context):
     """

@@ -13,7 +13,7 @@ def setup_logger(excel_filename):
     log_file_path = os.path.join(logs_base_path, log_filename)
 
     # Use excel filename as part of logger name to avoid duplicate loggers
-    logger_name = f"logger_{os.path.splitext(excel_filename)[0]}"
+    logger_name = f"logger_{os.path.splitext(excel_filename)[0]}_{timestamp}"
     logger = logging.getLogger(logger_name)
     logger.setLevel(logging.DEBUG)
 

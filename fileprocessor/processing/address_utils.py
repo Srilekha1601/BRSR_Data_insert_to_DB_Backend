@@ -35,9 +35,13 @@ def get_state_code(state_name):
             """
             cursor.execute(query, (state_name,))
             result = cursor.fetchone()
+
+            # print("result", result)
+
+        return result["state_or_union_territory_code"] if result else "OTH"
        
 
-        return result[0] if result else "OTH" 
+        # return result[0] if result else "OTH" 
 
     except pymysql.MySQLError as e:
         print("Error:", e)
@@ -73,8 +77,9 @@ def get_city_code(city_name):
             cursor.execute(query, (city_name,))
             result = cursor.fetchone()
        
+        return result["city_code"] if result else "OTH"
 
-        return result[0] if result else "OTH"  
+        # return result[0] if result else "OTH"  
 
     except pymysql.MySQLError as e:
         print("Error:", e)

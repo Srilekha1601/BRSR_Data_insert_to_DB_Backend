@@ -26,7 +26,7 @@ import pandas as pd
 from concurrent.futures import ThreadPoolExecutor
 from rest_framework.response import Response
 from rest_framework import status
-
+from.processing.variable import SECTION_A_FILENAME_IDENTIFIER
 
 
 @csrf_exempt
@@ -367,7 +367,7 @@ def data_insert(request, **kwargs):
         section_a_found = False
 
         for file in template_files:
-            if 'dummy_template_sectionA' in file.name:
+            if "Data_insert_BRSR_SectionA" in file.name:
                 section_a_file = file
                 section_a_found = True
             else:
@@ -376,7 +376,7 @@ def data_insert(request, **kwargs):
         # Section A validation
         if len(template_files) > 1 and not section_a_found:
             return Response({
-                "error": "Section A template file (dummy_template_sectionA) is required when uploading multiple files."
+                "error": f"Section A template file (Data_insert_BRSR_SectionA) is required when uploading multiple files."
             }, status=400)
         
         if len(template_files) == 1 and not section_a_found:
@@ -435,13 +435,13 @@ def data_insert(request, **kwargs):
         output_filename = f"processed_sheets_{timestamp}.xlsx"
         output_file_path = os.path.join(output_dir, output_filename)
 
-        # Optional: Write processed data to file
-        # with pd.ExcelWriter(output_file_path, engine='openpyxl') as writer:
-        #     for sheet_name, df in updated_sheets.items():
-        #         df.to_excel(writer, sheet_name=sheet_name, index=False)
+        #Optional: Write processed data to file
+        with pd.ExcelWriter(output_file_path, engine='openpyxl') as writer:
+            for sheet_name, df in updated_sheets.items():
+                df.to_excel(writer, sheet_name=sheet_name, index=False)
 
-        logger = setup_logger(output_filename)
-        success = insert_into_database(updated_sheets, db_connection, logger)
+        # logger = setup_logger(output_filename)
+        success = insert_into_database(updated_sheets, db_connection, logger=None)
 
         
 
@@ -455,5 +455,133 @@ def data_insert(request, **kwargs):
             "error": f"Unexpected error: {str(e)}",
             "file_path": output_file_path if 'output_file_path' in locals() else None
         }, status=500)
+
+
+# def process_template_file(file,latest_extracted_file_path):
+#         temp_template_path = None
+#         # try:
+#         with tempfile.NamedTemporaryFile(delete=False, suffix='.xlsx') as temp_template:
+#             for chunk in file.chunks():
+#                 temp_template.write(chunk)
+#             temp_template_path = temp_template.name
+
+#         extracted_data = pd.ExcelFile(latest_extracted_file_path)
+#         template_data = pd.ExcelFile(temp_template_path)
+
+#         updated_sheets = section_bysection_template_to_database_template(template_data, extracted_data)
+#         updated_sheets = process_sheets(updated_sheets, function_map)
+#         return updated_sheets
+
+
+# @csrf_exempt
+# @api_view(["POST"])
+# def data_insert(request, **kwargs):
+    
+ 
+#     output_file_path = None
+#     extracted_data_excel = None
+#     section_a_found = False
+ 
+    
+#     if 'section_template_file' not in request.FILES:
+#         return Response(
+#             {"error": "Template files are required"},
+#             status=status.HTTP_400_BAD_REQUEST
+#         )
+
+#     # Get the latest extracted_data_file from 'insert_data_project'
+#     insert_data_directory = os.path.join(os.getcwd(), "insert_data_project")
+#     xlsx_files = [f for f in os.listdir(insert_data_directory) if f.endswith(".xlsx")]
+#     if not xlsx_files:
+#         return Response({"error": "No extracted data file found"}, status=404)
+
+#     xlsx_files.sort(key=lambda f: os.path.getmtime(os.path.join(insert_data_directory, f)), reverse=True)
+#     latest_extracted_file_path = os.path.join(insert_data_directory, xlsx_files[0])
+
+#     # Handle template files
+#     template_files = request.FILES.getlist('section_template_file')
+#     print("template_files", template_files)
+
+#     section_a_file = None
+#     other_files = []
+#     section_a_found = False
+
+#     for file in template_files:
+#         if "Data_insert_BRSR_SectionA" in file.name:
+#             section_a_file = file
+#             section_a_found = True
+#         else:
+#             other_files.append(file)
+
+#     # Section A validation
+#     if len(template_files) > 1 and not section_a_found:
+#         return Response({
+#             "error": f"Section A template file (Data_insert_BRSR_SectionA) is required when uploading multiple files."
+#         }, status=400)
+    
+#     if len(template_files) == 1 and not section_a_found:
+#         other_files.append(template_files[0])  # Single file, not Section A
+
+    
+#         # finally:
+#         #     if extracted_data:
+#         #         extracted_data.close()
+#         #     if template_data:
+#         #         template_data.close()
+#         #     if temp_template_path and os.path.exists(temp_template_path):
+#         #         os.unlink(temp_template_path)
+
+#     updated_sheets = {}
+
+#     # If only one file is uploaded, no need for threading
+#     if len(template_files) == 1:
+#         file = template_files[0]
+#         print("file from 1",file)
+#         processed_data = process_template_file(file,latest_extracted_file_path)
+#         if isinstance(processed_data, dict):
+#             updated_sheets.update(processed_data)
+
+#     else:
+#         print("file from 2",section_a_file)
+#         # Process Section A first
+#         section_a_data = process_template_file(section_a_file,latest_extracted_file_path) if section_a_file else {}
+#         if isinstance(section_a_data, dict):
+#             updated_sheets.update(section_a_data)
+
+#         # Process other files concurrently
+#         with ThreadPoolExecutor() as executor:
+#             futures = [executor.submit(process_template_file, f, latest_extracted_file_path) for f in other_files]
+#             for future in futures:
+#                 result = future.result()
+#                 if isinstance(result, dict):
+#                     updated_sheets.update(result)
+
+#     # # Save combined sheets to output
+#     output_dir = os.path.join(os.getcwd(), "processed_sheets")
+#     os.makedirs(output_dir, exist_ok=True)
+#     timestamp = time.strftime("%Y%m%d_%H%M%S")
+#     output_filename = f"processed_sheets_{timestamp}.xlsx"
+#     output_file_path = os.path.join(output_dir, output_filename)
+
+#     #Optional: Write processed data to file
+#     with pd.ExcelWriter(output_file_path, engine='openpyxl') as writer:
+#         for sheet_name, df in updated_sheets.items():
+#             df.to_excel(writer, sheet_name=sheet_name, index=False)
+
+#     # logger = setup_logger(output_filename)
+#     # success = insert_into_database(updated_sheets, db_connection, logger=None)
+
+    
+
+#     return Response({
+#         "message": "Data processed and inserted successfully",
+#         "file_path": output_file_path
+#     }, status=200)
+
+#     # except Exception as e:
+#     #     return Response({
+#     #         "error": f"Unexpected error: {str(e)}",
+#     #         "file_path": output_file_path if 'output_file_path' in locals() else None
+#     #     }, status=500)
 
  

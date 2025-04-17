@@ -1,2 +1,0 @@
-[2025-04-14 16:11:00] [ERROR] Error inserting into table 'company_master': (1062, "Duplicate entry 'L24110MH1994PLC076156' for key 'company_master.PRIMARY'")
-[2025-04-14 16:11:00] [INFO] Failed query: INSERT INTO `company_master` (`company_code`, `CIN`, `company_name`, `year_of_incorporation`, `website`) VALUES ('L24110MH1994PLC076156', 'L24110MH1994PLC076156', 'VIDHI SPECIALTY FOOD INGREDIENTS LIMITED', '1994', 'https://vidhifoodcolors.com')
