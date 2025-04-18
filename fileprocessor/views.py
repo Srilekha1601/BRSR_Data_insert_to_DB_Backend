@@ -351,7 +351,7 @@ def list_files_in_directory(request):
         files = [f for f in os.listdir(insert_data_directory) if f.endswith(".xlsx")]
 
         if not files:
-            return Response({"message": "No files found."}, status=200)
+            return Response({"files": []}, status=200)
 
         return JsonResponse({"files": files}, status=200)
 
@@ -466,8 +466,10 @@ def data_insert(request, **kwargs):
                 df.to_excel(writer, sheet_name=sheet_name, index=False)
                 
         # logger = setup_logger(output_filename)
-        success = insert_into_database(updated_sheets, db_connection, logger=None)
-        
+        # success = insert_into_database(updated_sheets, db_connection, logger=None)
+        if extracted_file:
+            extracted_file.close()
+
 
         return Response({
             "message": "Data processed and inserted successfully",
