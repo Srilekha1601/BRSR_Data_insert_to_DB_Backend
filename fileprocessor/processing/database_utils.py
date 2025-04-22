@@ -7,6 +7,7 @@ import pymysql
 from .sql_utils import generate_unique_multi_insert_query
 from .config import table_name_sheet_dict
 from .logger_utils import setup_logger
+from .update_pdf_path import pdf_path_update
 
 # Dictionary mapping table names to their corresponding sheet names
 # table_name_sheet_dict is now imported from config.py
@@ -39,6 +40,10 @@ def insert_into_database(updated_sheets, db_connection, logger):
 
     company_id = None
     company_code = ""
+
+    inserted_company_master = False
+    inserted_company_location = False
+
     # Iterate over each sheet in the updated_sheets
     for sheet_name, updated_df in updated_sheets.items():
         if "mapper" in sheet_name.lower():
@@ -132,7 +137,7 @@ def insert_into_database(updated_sheets, db_connection, logger):
                               
                                 all_columns = all_columns_with_extra
                                 all_values = insert_values_list
-
+        
         if isinstance(all_values[0], tuple): 
             columns_str = ', '.join([f"`{col}`" for col in all_columns])
             
@@ -152,6 +157,8 @@ def insert_into_database(updated_sheets, db_connection, logger):
             query = f"INSERT INTO `{table_name_sheet_dict[table_name]}` ({columns_str}) VALUES ({values_str})"
             query = generate_unique_multi_insert_query(query)
 
+
+
         print(f"Executing query: {query}")
         
         # try:
@@ -163,8 +170,17 @@ def insert_into_database(updated_sheets, db_connection, logger):
         #     logger.info(f"Failed query: {query}")
         #     continue  
 
+        # ## Need to open
+
+        data_inserted = False
+
+
+        actual_table_name = table_name_sheet_dict[table_name]
+        # print("actual_table_name", actual_table_name)
+
         try:
             cursor.execute(query)
+            data_inserted = True 
         except pymysql.Error as e:
             print(f"Error inserting data into table '{table_name}': {e}")
             # Initialize the logger here only if it's not already provided
@@ -172,6 +188,20 @@ def insert_into_database(updated_sheets, db_connection, logger):
                 logger = setup_logger("db_error_log.log")
             logger.error(f"Error inserting into table '{table_name}': {e}")
             logger.info(f"Failed query: {query}")
-            continue  
+
+        if data_inserted:
+            if actual_table_name == 'company_master':
+                inserted_company_master = True
+            elif actual_table_name == 'company_location_details':
+                inserted_company_location = True
+        
+            # print("inserted_company_master", inserted_company_master)
+            # print("inserted_company_location", inserted_company_location)
+
+            # Only call pdf_path_update when both required inserts are done
+            if inserted_company_master and inserted_company_location:
+                pdf_path_update(db_connection)
+   
+            
         
     db_connection.commit() 

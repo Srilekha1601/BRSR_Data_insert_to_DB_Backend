@@ -7,6 +7,9 @@ import os
 from datetime import datetime
 from .json_utils import json_convertor
 from .function_mapping import function_map
+from .address_utils import *
+from .context_utils import *
+from .stock_exchange_related_functions import *
 
 def section_bysection_template_to_database_template(template_excel, extracted_data_excel):
     """
@@ -58,6 +61,8 @@ def section_bysection_template_to_database_template(template_excel, extracted_da
                             extracted_value = extracted_val["Extracted Value"].iloc[0]
                             if "function" in mapper_json and mapper_json["function"]:
                                 function_name = mapper_json["function"]
+
+                                print(f"Function name: {function_name}")
 
                                 # Dynamically lookup the function in the current Jupyter Notebook
                                 if function_name in globals():
@@ -195,7 +200,7 @@ def process_sheets(updated_sheets, function_map):
                     extracted_value = func(extracted_value)
 
             updated_df.at[index, "Extracted Value"] = extracted_value  
-            print("updated_sheets",updated_sheets)
+            # print("updated_sheets",updated_sheets)
              # # Save combined sheets to output
             output_dir = os.path.join(os.getcwd(), "processed_sheets")
             os.makedirs(output_dir, exist_ok=True)
@@ -204,9 +209,9 @@ def process_sheets(updated_sheets, function_map):
             output_file_path = os.path.join(output_dir, output_filename)
 
             #Optional: Write processed data to file
-            with pd.ExcelWriter(output_file_path, engine='openpyxl') as writer:
-                for sheet_name, df in updated_sheets.items():
-                    df.to_excel(writer, sheet_name=sheet_name, index=False)
+            # with pd.ExcelWriter(output_file_path, engine='openpyxl') as writer:
+            #     for sheet_name, df in updated_sheets.items():
+            #         df.to_excel(writer, sheet_name=sheet_name, index=False)
 
     return updated_sheets
 

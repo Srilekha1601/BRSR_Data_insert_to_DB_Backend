@@ -36,7 +36,7 @@ def get_state_code(state_name):
             cursor.execute(query, (state_name,))
             result = cursor.fetchone()
 
-            # print("result", result)
+            print("result state", result)
 
         return result["state_or_union_territory_code"] if result else "OTH"
        
@@ -76,6 +76,8 @@ def get_city_code(city_name):
             """
             cursor.execute(query, (city_name,))
             result = cursor.fetchone()
+
+            print("result city", result)
        
         return result["city_code"] if result else "OTH"
 

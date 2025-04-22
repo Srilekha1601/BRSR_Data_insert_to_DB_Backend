@@ -1,2 +1,2 @@
 # SECTION_A_FILENAME_IDENTIFIER = 'dummy_template_sectionA'
-SECTION_A_FILENAME_IDENTIFIER = 'Data_insert_using_template_BRSR_dev_SectionA'
+SECTION_A_FILENAME_IDENTIFIER = 'Data_insert_BRSR_SectionA'
