@@ -81,6 +81,7 @@ table_name_sheet_dict = {
     "energy_intensity_details":"energy_intensity_details",
     "company_PAT_scheme_details":"company_PAT_scheme_details",
     "water_withdrawal_source_details":"water_withdrawal_source_details",
+    "water_consumption_source_detail":"water_consumption_source_details",
     "water_intensity_details":"water_intensity_details",
     "water_discharge_source_details":"water_discharge_source_details",
     "company_zero_liquid_discharge_d":"company_zero_liquid_discharge_details",

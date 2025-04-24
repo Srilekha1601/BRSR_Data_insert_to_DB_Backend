@@ -28,7 +28,9 @@ from rest_framework.response import Response
 from rest_framework import status
 from.processing.variable import SECTION_A_FILENAME_IDENTIFIER
 from django.http import JsonResponse
-
+from .processing.delete_company_data import delete_company_data
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes
 @csrf_exempt
 @api_view(["POST"])
 def process_xml_template(request):
@@ -270,6 +272,100 @@ def delete_inserted_file(request):
 
     except Exception as e:
         return Response({"error": f"Error deleting file: {str(e)}"}, status=500)
+
+
+
+
+@api_view(['POST'])
+def check_company_name_year(request):
+    company_name = request.data.get('company_name')
+    year = str(request.data.get('year'))
+
+    if not company_name or not year:
+        return Response({'status': 'error', 'message': 'Company name and year are required'}, status=400)
+
+    try:
+        with db_connection.cursor() as cursor:
+            cursor.execute("SELECT company_code FROM company_master WHERE company_name = %s", (company_name,))
+            result = cursor.fetchone()
+            if not result:
+                return Response({'status': 'error', 'message': 'Company not found in the database. You may proceed to the next step (Step 2: Upload XML).'}, status=404)
+
+            company_code = result['company_code']
+
+         
+            cursor.execute("SELECT year FROM company_contacts_details WHERE company_code = %s", (company_code,))
+            rows = cursor.fetchall()
+          
+            unique_years = sorted(set(str(row['year']) for row in rows))
+
+           
+            years_string = ', '.join(unique_years)
+
+            if year in unique_years:
+                return Response({'status': 'success', 'message': f'Data for {company_name} is already present in the database for {year}, so you cannot proceed to the next step (Step 2: Upload XML).', 'code': 'y'})
+            else:
+                return Response({
+                    'status': 'warning',
+                    'message': f'Data for {company_name} is not available in the database for {year}. Available years in the database are: {years_string}. You can proceed to the next step (Step 2: Upload XML).',
+                    'code': 'n'
+                })
+
+    except Exception as e:
+        return Response({'status': 'error', 'message': f'Internal error: {str(e)}'}, status=500)
+
+
+
+
+
+@csrf_exempt
+@permission_classes([IsAuthenticated])
+@api_view(["POST"])
+def delete_company_by_name(request):
+    company_name = request.data.get("company_name")
+
+    # Check if company_name is provided in the request body
+    if not company_name:
+        return Response({"error": "Company name is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        with db_connection.cursor() as cursor:
+            # Retrieve company_code using company_name
+            cursor.execute("SELECT company_code FROM company_master WHERE company_name = %s", (company_name,))
+            result = cursor.fetchone()
+
+            # If no company found with the given name, return an error response
+            if not result:
+                return Response({"error": "Company not found."}, status=status.HTTP_404_NOT_FOUND)
+
+            company_code = result[0]  # Assuming company_code is the first column
+
+            # Call the delete_company_data function to delete records related to the company
+            deletion_result = delete_company_data(company_code)
+
+            # Check if deletion was successful
+            if deletion_result.get("success"):
+                return Response({
+                    "message": f"Company '{company_name}' deleted successfully.",
+                    "company_code": company_code,
+                    "rows_deleted_brsr": deletion_result.get("deleted_brsr", 0),
+                    "rows_deleted_master": deletion_result.get("deleted_master", 0)
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({
+                    "error": "Deletion failed.",
+                    "details": deletion_result.get("error")
+                }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    except Exception as e:
+        # General exception handling
+        return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+
+
+
+
     
 
 ### THIS CODE IS FOR DEBUGGING PURPOSES ONLY  FOR DATA INSERT ### 
