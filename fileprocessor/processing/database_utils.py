@@ -12,7 +12,7 @@ from .update_pdf_path import pdf_path_update
 # Dictionary mapping table names to their corresponding sheet names
 # table_name_sheet_dict is now imported from config.py
 
-def insert_into_database(updated_sheets, db_connection, logger):
+def insert_into_database(updated_sheets, db_connection, logger,industry_category_id=None, industry_subcategory_id=None):
     """
     Inserts data from multiple updated sheets into a database while handling references 
     and dynamically structured JSON data.
@@ -43,7 +43,7 @@ def insert_into_database(updated_sheets, db_connection, logger):
 
     inserted_company_master = False
     inserted_company_location = False
-
+    industry_mapping_inserted = False
     # Iterate over each sheet in the updated_sheets
     for sheet_name, updated_df in updated_sheets.items():
         if "mapper" in sheet_name.lower():
@@ -202,6 +202,29 @@ def insert_into_database(updated_sheets, db_connection, logger):
             if inserted_company_master and inserted_company_location:
                 pdf_path_update(db_connection)
    
-            
+        if inserted_company_master and company_code and not industry_mapping_inserted:
+            try:
+                check_query = """
+                    SELECT 1 FROM company_industry_category_mapping 
+                    WHERE company_code = %s AND industry_category_id = %s AND industry_subcategory_id = %s
+                """
+                cursor.execute(check_query, (company_code, industry_category_id, industry_subcategory_id))
+                exists = cursor.fetchone()
+
+                if not exists:
+                    mapper_query = """
+                        INSERT INTO company_industry_category_mapping (company_code, industry_category_id, industry_subcategory_id)
+                        VALUES (%s, %s, %s)
+                    """
+                    cursor.execute(mapper_query, (company_code, industry_category_id, industry_subcategory_id))
+                    db_connection.commit()
+                    industry_mapping_inserted = True
+                else:
+                    logger.info(f"Industry mapping already exists for company {company_code}")
+                    industry_mapping_inserted = True
+            except pymysql.Error as e:
+                if logger is None:
+                    logger = setup_logger("db_error_log.log")
+                logger.error(f"Error inserting into category_mapper: {e}")    
         
     db_connection.commit() 

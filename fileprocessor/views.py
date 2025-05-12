@@ -12,6 +12,7 @@ from .processing.template_processor import section_bysection_template_to_databas
 from .processing.database_utils import insert_into_database
 from .processing.function_mapping import function_map
 from .processing.db import db_connection
+from .processing.db import get_db_connection
 import pandas as pd
 import pymysql
 from django.conf import settings
@@ -31,6 +32,7 @@ from django.http import JsonResponse
 from .processing.delete_company_data import delete_company_data
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
+
 @csrf_exempt
 @api_view(["POST"])
 def process_xml_template(request):
@@ -140,7 +142,10 @@ def data_insert(request, **kwargs):
                 {"error": "Template files are required"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-
+            
+        industry_category_id = request.POST.get("industry_category_id")
+        industry_subcategory_id = request.POST.get("industry_subcategory_id")
+        
         # Get extracted filename from POST data
         extracted_filename = request.POST.get("extracted_data_filename")
         if not extracted_filename:
@@ -234,7 +239,13 @@ def data_insert(request, **kwargs):
                 df.to_excel(writer, sheet_name=sheet_name, index=False)
                 
         # logger = setup_logger(output_filename)
-        success = insert_into_database(updated_sheets, db_connection, logger=None)
+        success = insert_into_database(updated_sheets,
+                                       db_connection,
+                                       logger=None,
+                                       industry_category_id=industry_category_id,
+                                       industry_subcategory_id=industry_subcategory_id
+                                       )
+        
         if extracted_file:
             extracted_file.close()
 
@@ -364,9 +375,49 @@ def delete_company_by_name(request):
 
 
 
+@api_view(['GET'])
+def get_industry_categories(request):
+    try:
+        connection = get_db_connection()
+        with connection.cursor() as cursor:
+            query = "SELECT industry_category_id, industry_category FROM industry_category_master"
+            cursor.execute(query)
+            result = cursor.fetchall()
+            
+            # Returning the result as JSON
+            return JsonResponse(result, safe=False)
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
 
 
-    
+
+@api_view(['GET'])
+def get_sub_industry_categories(request, category_id):
+    try:
+        connection = get_db_connection()
+        with connection.cursor() as cursor:
+            query = """
+                SELECT industry_subcategory_id, industry_category_id, industry_subcategory
+                FROM industry_subcategory_master
+                WHERE industry_category_id = %s
+            """
+            cursor.execute(query, (category_id,))
+            result = cursor.fetchall()
+            
+
+            if not result:
+                return JsonResponse({"message": "No subcategories found for the given category_id."}, status=404)
+            
+            return JsonResponse(result, safe=False)
+
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+
+
+
+
+
 
 ### THIS CODE IS FOR DEBUGGING PURPOSES ONLY  FOR DATA INSERT ### 
 # @csrf_exempt

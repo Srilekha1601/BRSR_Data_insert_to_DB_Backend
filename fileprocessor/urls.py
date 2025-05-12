@@ -9,4 +9,6 @@ urlpatterns = [
     path('delete_inserted_files/', views.delete_inserted_file, name='delete-inserted-files'),
     path('check_company_name_year/', views.check_company_name_year, name='check-company-name-year'),
     path('delete_company_data/', views.delete_company_by_name, name='delete-company-by-name'),
+    path('industry-categories/', views.get_industry_categories, name='get-industry-categories'),
+    path('industry-subcategories/<int:category_id>/', views.get_sub_industry_categories, name='get-sub-industry-categories'),
 ]
